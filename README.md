@@ -8,7 +8,7 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![MCP](https://img.shields.io/badge/MCP-compatible-purple)
 
-**Scar Tissue Project · 疤痕组织**
+**Scar Tissue Project ·imperfect**
 
 </div>
 
@@ -175,6 +175,3 @@ Perfect models produce mediocre outputs. Real errors breed evolving intelligence
 - Deploy public nodes
 - Report bugs and suggest improvements
 
-## 📄 License
-
-MIT
