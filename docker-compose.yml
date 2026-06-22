@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  imperfect-api:
+    build: .
+    container_name: imperfect-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/imperfect.db
+      - FAISS_PATH=/app/data/scars.faiss
+      # - API_KEY=your_custom_key  # 取消注释开启鉴权
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  imperfect-web:
+    image: nginx:alpine
+    container_name: imperfect-web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html
+    depends_on:
+      - imperfect-api
+    restart: unless-stopped
