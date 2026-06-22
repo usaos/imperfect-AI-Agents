@@ -5,7 +5,6 @@
 <div align="center">
 
 ![version](https://img.shields.io/badge/version-3.1-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
 ![MCP](https://img.shields.io/badge/MCP-compatible-purple)
 
 **Scar Tissue Project ·imperfect**
