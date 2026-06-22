@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>imperfect | Agent Immune System Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-bold">i</div>
+                <h1 class="text-xl font-bold">imperfect <span class="text-gray-400 font-normal text-sm">v3.1</span></h1>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <input id="apiKeyInput" type="password" placeholder="API Key (optional)" 
+                    class="px-3 py-1.5 border border-gray-200 rounded-md text-sm w-40 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                <span id="statusText" class="text-gray-500">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <!-- 概览统计卡片 -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <p class="text-gray-500 text-sm mb-1">Total Scars</p>
+                <p id="totalScars" class="text-3xl font-bold gradient-text">--</p>
+                <p class="text-xs text-gray-400 mt-1">Global failure memories</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <p class="text-gray-500 text-sm mb-1">Complete Reflections</p>
+                <p id="completeScars" class="text-3xl font-bold text-indigo-600">--</p>
+                <p class="text-xs text-gray-400 mt-1">With full failure-fix pairs</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <p class="text-gray-500 text-sm mb-1">Source Platforms</p>
+                <p id="platformCount" class="text-3xl font-bold text-pink-600">--</p>
+                <p class="text-xs text-gray-400 mt-1">Ecosystem coverage</p>
+            </div>
+        </section>
+
+        <!-- 搜索与导出区 -->
+        <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1">
+                    <input id="searchInput" type="text" placeholder="Search failure cases... e.g. cloudflare, pandas timeout"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <button id="searchBtn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Search Scars
+                </button>
+                <button id="exportBtn" class="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition font-medium">
+                    Export DPO Dataset
+                </button>
+            </div>
+
+            <!-- 搜索结果 -->
+            <div id="resultsContainer" class="space-y-4">
+                <p class="text-gray-400 text-sm text-center py-8">Enter a keyword to search historical failure cases</p>
+            </div>
+        </section>
+
+        <!-- 平台分布 -->
+        <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 class="font-semibold text-lg mb-4">Source Distribution</h2>
+            <div id="platformList" class="space-y-2">
+                <p class="text-gray-400 text-sm">Loading...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center text-gray-400 text-sm py-8">
+        imperfect · Agent Imperfection Protocol · Scar Tissue v3.1
+    </footer>
+
+    <script>
+        // 配置
+        const API_BASE = window.location.origin.includes('8080') 
+            ? 'http://localhost:8000' 
+            : window.location.origin.replace('8080', '8000');
+
+        // 工具函数：获取请求头
+        function getHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            const apiKey = document.getElementById('apiKeyInput').value;
+            if (apiKey) headers['X-API-Key'] = apiKey;
+            return headers;
+        }
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/stats`, { headers: getHeaders() });
+                const data = await res.json();
+                
+                document.getElementById('totalScars').textContent = data.total_scars;
+                document.getElementById('completeScars').textContent = data.complete_reflection;
+                document.getElementById('platformCount').textContent = Object.keys(data.platform_distribution).length;
+                
+                // 渲染平台分布
+                const platformList = document.getElementById('platformList');
+                platformList.innerHTML = '';
+                Object.entries(data.platform_distribution).forEach(([platform, count]) => {
+                    const percent = ((count / data.total_scars) * 100).toFixed(1);
+                    platformList.innerHTML += `
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm w-32 text-gray-600">${platform}</span>
+                            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-pink-500" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-500 w-16 text-right">${count}</span>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-green-500';
+                document.getElementById('statusText').textContent = 'Connected';
+            } catch (e) {
+                document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-red-500';
+                document.getElementById('statusText').textContent = 'Disconnected';
+            }
+        }
+
+        // 搜索疤痕
+        document.getElementById('searchBtn').addEventListener('click', async () => {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Searching...</p>';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/scars/search`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ query, limit: 5 })
+                });
+                const data = await res.json();
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">No matching scars found. You are exploring new territory.</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                data.results.forEach((scar, index) => {
+                    container.innerHTML += `
+                        <div class="border border-gray-100 rounded-lg p-4 hover:border-indigo-200 transition">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-medium">${scar.task}</h3>
+                                <span class="text-xs px-2 py-0.5 rounded-full ${scar.freshness_level === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
+                                    ${scar.freshness_level}
+                                </span>
+                            </div>
+                            ${scar.pre_condition ? `<p class="text-xs text-gray-500 mb-2">Pre-condition: ${scar.pre_condition}</p>` : ''}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div class="bg-red-50 p-3 rounded-md">
+                                    <p class="text-red-700 font-medium text-xs mb-1">❌ Pitfall</p>
+                                    <p class="text-red-800">${scar.reflection_analysis}</p>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-md">
+                                    <p class="text-green-700 font-medium text-xs mb-1">✅ Fix</p>
+                                    <p class="text-green-800">${scar.corrected_action}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                                <span>Similarity: ${(scar.similarity * 100).toFixed(1)}%</span>
+                                <span>Uncertainty: ${scar.uncertainty_score}</span>
+                                <span>Tags: ${scar.tags || 'none'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                container.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Search failed. Check API connection.</p>';
+            }
+        });
+
+        // 导出DPO数据集
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const apiKey = document.getElementById('apiKeyInput').value;
+            let url = `${API_BASE}/api/scars/export_dpo?download=true`;
+            if (apiKey) {
+                url += `&api_key=${encodeURIComponent(apiKey)}`;
+            }
+            window.open(url, '_blank');
+        });
+
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('searchBtn').click();
+        });
+
+        // 初始化
+        loadStats();
+        setInterval(loadStats, 30000); // 每30秒刷新统计
+    </script>
+</body>
+</html>
